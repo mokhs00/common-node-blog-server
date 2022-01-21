@@ -1,0 +1,30 @@
+{
+  "posts": [
+    { "id": "1", "title": "POST TITLE", "content": "POST CONTENT" },
+    {
+      "id": "29bf46d0-7aa8-4a19-a809-2b32f64b3e51",
+      "title": "foo",
+      "content": "1"
+    },
+    {
+      "id": "c3cce02a-fbab-4ffe-bf8d-4934a9415194",
+      "title": "foo",
+      "content": "1"
+    },
+    {
+      "id": "3f480f32-e238-4302-a2de-e7931c4ec91a",
+      "title": "foo",
+      "content": "1"
+    },
+    {
+      "id": "820b701e-2540-4770-b4dc-7fa22e37fc34",
+      "title": "foo",
+      "content": "1"
+    },
+    {
+      "id": "3c9a07d5-ed1d-4b3a-ad1c-92dea5c4c8e0",
+      "title": "foo",
+      "content": "1"
+    }
+  ]
+}

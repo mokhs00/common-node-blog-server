@@ -1,7 +1,5 @@
 // @ts-check
-
-const { v4: uuid } = require('uuid');
-
+const postsService = require('./service');
 /**
  * @typedef APIResponse
  * @property {number} statusCode
@@ -22,15 +20,6 @@ const { v4: uuid } = require('uuid');
  * @property {string} content
  */
 
-/** @type {Post[]} */
-const posts = [
-  {
-    id: '1',
-    title: 'POST TITLE',
-    content: 'POST CONTENT',
-  },
-];
-
 /** @type {Route[]} */
 const routes = [
   {
@@ -38,7 +27,7 @@ const routes = [
     method: 'GET',
     callback: async () => ({
       statusCode: 200,
-      body: posts,
+      body: await postsService.getPosts(),
     }),
   },
   {
@@ -47,7 +36,7 @@ const routes = [
     callback: async (matches) => {
       const postId = matches[1];
 
-      const find = posts.find((_post) => _post.id === postId);
+      const find = await postsService.getPostOne(postId);
 
       if (!find) {
         return {
@@ -70,13 +59,7 @@ const routes = [
         };
       }
 
-      const newPost = {
-        id: uuid(),
-        title: body.title,
-        content: body.content,
-      };
-
-      posts.push(newPost);
+      const newPost = await postsService.createPost(body.title, body.content);
 
       return { statusCode: 201, body: newPost };
     },
