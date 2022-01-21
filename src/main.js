@@ -1,92 +1,56 @@
+/* eslint-disable consistent-return */
 /* eslint-disable no-console */
 // @ts-check
 
-const { v4: uuid } = require('uuid');
 const http = require('http');
-
-/**
- * @typedef Post
- * @property {string} id
- * @property {string} title
- * @property {string} content
- */
-
-/** @type {Post[]} */
-const posts = [
-  {
-    id: '1',
-    title: 'POST TITLE',
-    content: 'POST CONTENT',
-  },
-];
+const { routes } = require('./api');
 
 const APPLICATION_JSON_UTF8 = 'application/json; encoding=utf-8';
+const APPLICATION_JSON = 'application/json';
 
-const server = http.createServer((req, res) => {
-  const POSTS_ID_REGEX = /^\/posts\/([a-zA-Z0-9-_]+)$/;
-  const postIdRegexResult =
-    (req.url && POSTS_ID_REGEX.exec(req.url)) || undefined;
+const server = http.createServer(async (req, res) => {
+  const route = routes.find(
+    (_route) =>
+      req.url &&
+      req.method &&
+      _route.url.test(req.url) &&
+      _route.method === req.method
+  );
 
-  // @GET /posts
-  if (req.url === '/posts' && req.method === 'GET') {
-    const result = {
-      posts: posts.map((post) => ({
-        id: post.id,
-        title: post.title,
-      })),
-      totalCount: posts.length,
-    };
-
-    res.statusCode = 200;
-    res.setHeader('Content-Type', APPLICATION_JSON_UTF8);
-    return res.end(JSON.stringify(result));
+  if (!req.url || !route) {
+    res.statusCode = 404;
+    return res.end('Not Found');
   }
 
-  // @GET /posts/:id
-  if (postIdRegexResult && req.method === 'GET') {
-    const postId = postIdRegexResult[1];
-    const findPost = posts.filter((post) => post.id === postId);
+  const regexResult = route.url.exec(req.url);
 
-    if (!findPost.length) {
-      res.setHeader('Content-Type', APPLICATION_JSON_UTF8);
-      res.statusCode = 404;
-      return res.end(JSON.stringify({ message: 'Not Found' }));
-    }
-
-    res.setHeader('Content-Type', APPLICATION_JSON_UTF8);
-    res.statusCode = 200;
-    return res.end(JSON.stringify(findPost.pop()));
+  if (!regexResult) {
+    res.statusCode = 404;
+    return res.end('Not Found');
   }
 
-  // @POST /posts
-  if (req.url === '/posts' && req.method === 'POST') {
-    req.setEncoding('utf-8');
-    req.on('data', (data) => {
-      /**
-       * @typedef CreatePostRequest
-       * @property {string} title
-       * @property {string} content
-       */
-      /** @type {CreatePostRequest} */
-      const request = JSON.parse(data);
+  /** @type {Object.<string, *> | Array<Object.<string, *>> | undefined } */
+  const body =
+    (req.headers['content-type'] === APPLICATION_JSON &&
+      (await new Promise((resolve, reject) => {
+        req.setEncoding('utf-8');
+        req.on('data', (data) => {
+          try {
+            resolve(JSON.parse(data));
+          } catch {
+            reject(new Error('Illegal form json'));
+          }
+        });
+      }))) ||
+    undefined;
 
-      const newPost = {
-        id: uuid(),
-        title: request.title,
-        content: request.content,
-      };
-      posts.push(newPost);
+  const result = await route.callback(regexResult, body);
 
-      res.setHeader('Content-Type', APPLICATION_JSON_UTF8);
-      res.statusCode = 201;
-      return res.end(JSON.stringify(newPost));
-    });
+  res.statusCode = result.statusCode;
+  if (typeof result.body === 'string') return res.end(result.body);
 
-    return null;
-  }
-
-  res.statusCode = 404;
-  res.end('Not Found');
+  res.setHeader('Content-Type', APPLICATION_JSON_UTF8);
+  return res.end(JSON.stringify(result.body));
 });
 
 const PORT = 4000;
