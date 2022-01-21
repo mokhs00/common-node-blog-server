@@ -12,7 +12,7 @@ const { v4: uuid } = require('uuid');
 
 const DB_JSON_FILENAME = 'database.json';
 
-/** @returns {Promise<Object.<string, *>} */
+/** @returns {Promise<Object.<string, *>>} */
 const readDB = async () => {
   const json = await fs.promises.readFile(DB_JSON_FILENAME, 'utf-8');
   return JSON.parse(json);
