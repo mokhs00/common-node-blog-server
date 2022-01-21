@@ -1,11 +1,12 @@
 /* eslint-disable no-console */
 // @ts-check
 
+const { v4: uuid } = require('uuid');
 const http = require('http');
 
 /**
  * @typedef Post
- * @property {number | string} id
+ * @property {string} id
  * @property {string} title
  * @property {string} content
  */
@@ -13,11 +14,13 @@ const http = require('http');
 /** @type {Post[]} */
 const posts = [
   {
-    id: 1,
+    id: '1',
     title: 'POST TITLE',
     content: 'POST CONTENT',
   },
 ];
+
+const APPLICATION_JSON_UTF8 = 'application/json; encoding=utf-8';
 
 const server = http.createServer((req, res) => {
   const POSTS_ID_REGEX = /^\/posts\/([a-zA-Z0-9-_]+)$/;
@@ -35,7 +38,7 @@ const server = http.createServer((req, res) => {
     };
 
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json; encoding=utf-8');
+    res.setHeader('Content-Type', APPLICATION_JSON_UTF8);
     return res.end(JSON.stringify(result));
   }
 
@@ -45,18 +48,45 @@ const server = http.createServer((req, res) => {
     const findPost = posts.filter((post) => post.id === postId);
 
     if (!findPost.length) {
-      res.setHeader('Content-Type', 'application/json; encoding=utf-8');
+      res.setHeader('Content-Type', APPLICATION_JSON_UTF8);
       res.statusCode = 404;
       return res.end(JSON.stringify({ message: 'Not Found' }));
     }
 
-    res.setHeader('Content-Type', 'application/json; encoding=utf-8');
+    res.setHeader('Content-Type', APPLICATION_JSON_UTF8);
     res.statusCode = 200;
     return res.end(JSON.stringify(findPost.pop()));
   }
 
+  // @POST /posts
+  if (req.url === '/posts' && req.method === 'POST') {
+    req.setEncoding('utf-8');
+    req.on('data', (data) => {
+      /**
+       * @typedef CreatePostRequest
+       * @property {string} title
+       * @property {string} content
+       */
+      /** @type {CreatePostRequest} */
+      const request = JSON.parse(data);
+
+      const newPost = {
+        id: uuid(),
+        title: request.title,
+        content: request.content,
+      };
+      posts.push(newPost);
+
+      res.setHeader('Content-Type', APPLICATION_JSON_UTF8);
+      res.statusCode = 201;
+      return res.end(JSON.stringify(newPost));
+    });
+
+    return null;
+  }
+
   res.statusCode = 404;
-  return res.end('Not Found');
+  res.end('Not Found');
 });
 
 const PORT = 4000;
